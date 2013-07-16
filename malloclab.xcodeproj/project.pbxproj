@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		35BCE9C11795E898003B10D7 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 35BCE9C01795E898003B10D7 /* main.c */; };
 		35BCE9C31795E898003B10D7 /* malloclab.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 35BCE9C21795E898003B10D7 /* malloclab.1 */; };
+		35BCE9CA1795E8B7003B10D7 /* mm.c in Sources */ = {isa = PBXBuildFile; fileRef = 35BCE9C91795E8B7003B10D7 /* mm.c */; };
+		35BCE9CC1795FADC003B10D7 /* mm-naive.c in Sources */ = {isa = PBXBuildFile; fileRef = 35BCE9CB1795FADC003B10D7 /* mm-naive.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +30,8 @@
 		35BCE9BD1795E898003B10D7 /* malloclab */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = malloclab; sourceTree = BUILT_PRODUCTS_DIR; };
 		35BCE9C01795E898003B10D7 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		35BCE9C21795E898003B10D7 /* malloclab.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = malloclab.1; sourceTree = "<group>"; };
+		35BCE9C91795E8B7003B10D7 /* mm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mm.c; sourceTree = "<group>"; };
+		35BCE9CB1795FADC003B10D7 /* mm-naive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "mm-naive.c"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +65,8 @@
 			isa = PBXGroup;
 			children = (
 				35BCE9C01795E898003B10D7 /* main.c */,
+				35BCE9C91795E8B7003B10D7 /* mm.c */,
+				35BCE9CB1795FADC003B10D7 /* mm-naive.c */,
 				35BCE9C21795E898003B10D7 /* malloclab.1 */,
 			);
 			path = malloclab;
@@ -118,6 +124,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				35BCE9C11795E898003B10D7 /* main.c in Sources */,
+				35BCE9CA1795E8B7003B10D7 /* mm.c in Sources */,
+				35BCE9CC1795FADC003B10D7 /* mm-naive.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
