@@ -64,7 +64,7 @@ void *malloc(size_t size)
 {
   int newsize = ALIGN(size + SIZE_T_SIZE);
   unsigned char *p = mem_sbrk(newsize);
-  //dbg_printf("malloc %u => %p\n", size, p);
+  /*dbg_printf("malloc %u => %p\n", size, p);*/
 
   if ((long)p < 0)
     return NULL;

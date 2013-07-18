@@ -32,6 +32,8 @@
 		35BCE9C21795E898003B10D7 /* malloclab.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = malloclab.1; sourceTree = "<group>"; };
 		35BCE9C91795E8B7003B10D7 /* mm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mm.c; sourceTree = "<group>"; };
 		35BCE9CB1795FADC003B10D7 /* mm-naive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "mm-naive.c"; sourceTree = "<group>"; };
+		35BCE9CD1795FE8A003B10D7 /* memlib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = memlib.c; path = ../../../memlib.c; sourceTree = "<group>"; };
+		35BCE9CE1795FE8A003B10D7 /* memlib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = memlib.h; path = ../../../memlib.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +68,8 @@
 			children = (
 				35BCE9C01795E898003B10D7 /* main.c */,
 				35BCE9C91795E8B7003B10D7 /* mm.c */,
+				35BCE9CD1795FE8A003B10D7 /* memlib.c */,
+				35BCE9CE1795FE8A003B10D7 /* memlib.h */,
 				35BCE9CB1795FADC003B10D7 /* mm-naive.c */,
 				35BCE9C21795E898003B10D7 /* malloclab.1 */,
 			);
