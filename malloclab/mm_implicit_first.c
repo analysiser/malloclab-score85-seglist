@@ -21,7 +21,7 @@
 /* If you want debugging output, use the following macro.  When you hand
  * in, remove the #define DEBUG line. */
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #ifdef DEBUG
@@ -188,7 +188,7 @@ static void *extend_heap(int words) {
     
 #if DEBUG
     dbg_printf("In extend heap!\n");
-    mm_checkheap(1);
+    mm_checkheap(8);
 #endif
     
     return coalesce(bp);

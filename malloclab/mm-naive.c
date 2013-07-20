@@ -20,7 +20,7 @@
 
 /* If you want debugging output, use the following macro.  When you hand
  * in, remove the #define DEBUG line. */
-#define DEBUG
+#define DEBUG 1
 #ifdef DEBUG
 # define dbg_printf(...) printf(__VA_ARGS__)
 #else
