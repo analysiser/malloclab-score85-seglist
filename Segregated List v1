@@ -1,0 +1,109 @@
+Segregated List v1, first hit policy, 10 classes
+
+v1 class = 10
+Results for mm malloc:
+  valid  util   ops    secs     Kops  trace
+   yes    77%  100000  0.004428 22583 ./traces/alaska.rep
+ * yes    90%    4805  0.000370 12969 ./traces/amptjp.rep
+ * yes    71%    4162  0.000177 23533 ./traces/bash.rep
+ * yes    43%   57716  0.001832 31500 ./traces/boat.rep
+ * yes    91%    5032  0.000322 15633 ./traces/cccp.rep
+ * yes    62%   11991  0.000474 25305 ./traces/chrome.rep
+ * yes    99%   20000  0.000563 35534 ./traces/coalesce-big.rep
+   yes    66%   14400  0.000437 32939 ./traces/coalescing-bal.rep
+   yes   100%      15  0.000002  6327 ./traces/corners.rep
+ * yes    95%    5683  0.000782  7267 ./traces/cp-decl.rep
+ u yes    67%      --        --    -- ./traces/exhaust.rep
+ * yes    63%    8000  0.000449 17818 ./traces/firefox.rep
+   yes    71%   99804  0.005804 17197 ./traces/firefox-reddit.rep
+   yes    74%     118  0.000008 14590 ./traces/hostname.rep
+ * yes    83%   19405  0.001165 16652 ./traces/login.rep
+ * yes    62%     200  0.000013 15477 ./traces/lrucd.rep
+   yes    77%     372  0.000022 17093 ./traces/ls.rep
+   yes    33%      10  0.000001  7219 ./traces/malloc.rep
+   yes    27%      17  0.000002  9663 ./traces/malloc-free.rep
+ u yes    99%      --        --    -- ./traces/needle.rep
+ * yes    76%     200  0.000011 18015 ./traces/nlydf.rep
+   yes    73%    1494  0.000076 19613 ./traces/perl.rep
+ * yes    57%     200  0.000010 19856 ./traces/qyqyc.rep
+ * yes    87%    4800  0.000658  7298 ./traces/random.rep
+ * yes    85%    4800  0.000727  6603 ./traces/random2.rep
+ * yes    78%     147  0.000008 19019 ./traces/rm.rep
+ * yes    67%     200  0.000009 21458 ./traces/rulsr.rep
+ p yes     --    6495  0.000259 25069 ./traces/seglist.rep
+   yes    89%      12  0.000002  5415 ./traces/short2.rep
+18 17     76%  153836  0.007829 19649
+
+Perf index = 32 (util) & 39 (thru) = 71/100
+
+v2, class = 50
+Results for mm malloc:
+  valid  util   ops    secs     Kops  trace
+   yes    76%  100000  0.005034 19864 ./traces/alaska.rep
+ * yes    90%    4805  0.000383 12543 ./traces/amptjp.rep
+ * yes    70%    4162  0.000209 19893 ./traces/bash.rep
+ * yes    43%   57716  0.003222 17916 ./traces/boat.rep
+ * yes    91%    5032  0.000336 14965 ./traces/cccp.rep
+ * yes    62%   11991  0.000600 20001 ./traces/chrome.rep
+ * yes    99%   20000  0.000584 34234 ./traces/coalesce-big.rep
+   yes    64%   14400  0.000439 32784 ./traces/coalescing-bal.rep
+   yes   100%      15  0.000002  7745 ./traces/corners.rep
+ * yes    95%    5683  0.000507 11201 ./traces/cp-decl.rep
+ u yes    67%      --        --    -- ./traces/exhaust.rep
+ * yes    63%    8000  0.000377 21213 ./traces/firefox.rep
+   yes    71%   99804  0.005546 17996 ./traces/firefox-reddit.rep
+   yes    71%     118  0.000009 13441 ./traces/hostname.rep
+ * yes    83%   19405  0.001294 15001 ./traces/login.rep
+ * yes    60%     200  0.000010 19584 ./traces/lrucd.rep
+   yes    76%     372  0.000024 15395 ./traces/ls.rep
+   yes    31%      10  0.000001  7221 ./traces/malloc.rep
+   yes    25%      17  0.000002 10843 ./traces/malloc-free.rep
+ u yes    99%      --        --    -- ./traces/needle.rep
+ * yes    75%     200  0.000012 17265 ./traces/nlydf.rep
+   yes    77%    1494  0.000104 14365 ./traces/perl.rep
+ * yes    81%     200  0.000011 19047 ./traces/qyqyc.rep
+ * yes    87%    4800  0.000639  7517 ./traces/random.rep
+ * yes    85%    4800  0.000712  6738 ./traces/random2.rep
+ * yes    77%     147  0.000011 12792 ./traces/rm.rep
+ * yes    65%     200  0.000010 19584 ./traces/rulsr.rep
+ p yes     --    6495  0.000381 17037 ./traces/seglist.rep
+   yes    88%      12  0.000002  5170 ./traces/short2.rep
+18 17     77%  153836  0.009298 16545
+
+Perf index = 34 (util) & 39 (thru) = 73/100
+
+v3, class = 75
+Results for mm malloc:
+  valid  util   ops    secs     Kops  trace
+   yes    84%  100000  0.005101 19605 ./traces/alaska.rep
+ * yes    90%    4805  0.000390 12306 ./traces/amptjp.rep
+ * yes    70%    4162  0.000222 18710 ./traces/bash.rep
+ * yes    43%   57716  0.003813 15138 ./traces/boat.rep
+ * yes    91%    5032  0.000342 14698 ./traces/cccp.rep
+ * yes    62%   11991  0.000666 18005 ./traces/chrome.rep
+ * yes    99%   20000  0.000619 32309 ./traces/coalesce-big.rep
+   yes    63%   14400  0.000436 32995 ./traces/coalescing-bal.rep
+   yes   100%      15  0.000002  6981 ./traces/corners.rep
+ * yes    95%    5683  0.000516 11003 ./traces/cp-decl.rep
+ u yes    67%      --        --    -- ./traces/exhaust.rep
+ * yes    63%    8000  0.000414 19329 ./traces/firefox.rep
+   yes    71%   99804  0.006272 15913 ./traces/firefox-reddit.rep
+   yes    70%     118  0.000011 11159 ./traces/hostname.rep
+ * yes    83%   19405  0.001505 12894 ./traces/login.rep
+ * yes    58%     200  0.000011 18866 ./traces/lrucd.rep
+   yes    76%     372  0.000029 12911 ./traces/ls.rep
+   yes    30%      10  0.000002  6263 ./traces/malloc.rep
+   yes    24%      17  0.000002  9843 ./traces/malloc-free.rep
+ u yes    99%      --        --    -- ./traces/needle.rep
+ * yes    87%     200  0.000011 18234 ./traces/nlydf.rep
+   yes    76%    1494  0.000118 12613 ./traces/perl.rep
+ * yes    80%     200  0.000010 19215 ./traces/qyqyc.rep
+ * yes    88%    4800  0.000626  7671 ./traces/random.rep
+ * yes    85%    4800  0.000698  6880 ./traces/random2.rep
+ * yes    76%     147  0.000014 10876 ./traces/rm.rep
+ * yes    64%     200  0.000010 20202 ./traces/rulsr.rep
+ p yes     --    6495  0.000473 13737 ./traces/seglist.rep
+   yes    87%      12  0.000002  5173 ./traces/short2.rep
+18 17     78%  153836  0.010340 14878
+
+Perf index = 35 (util) & 39 (thru) = 74/100
