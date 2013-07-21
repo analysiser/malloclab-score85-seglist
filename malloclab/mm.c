@@ -90,7 +90,7 @@
 #define ALIGN(p) (((size_t)(p) + (ALIGNMENT-1)) & ~0x7)
 
 /* number of block size classes in seglist */
-#define CLASS_NUM       21
+#define CLASS_NUM       12
 
 
 /* Helper functions*/
@@ -124,40 +124,43 @@ static inline int get_class_idx_by_size(size_t asize) {
     
     index = (int)((asize - 32) / 8);
     index = (index > (CLASS_NUM - 1)) ? (CLASS_NUM - 1) : index;
-    
-    if ((asize > 104) && (asize <= 128)) {
-        index = 10;
+    if (asize == 32) {
+        index = 0;
+    }
+    if ((asize > 32) && (asize <= 64)) {
+        index = 1;
+    }
+    if ((asize > 64) && (asize <= 128)) {
+        index = 2;
     }
     if ((asize > 128) && (asize <= 256)) {
-        index = 11;
+        index = 3;
     }
     if ((asize > 256) && (asize <= 512)){
-        index = 12;
+        index = 4;
     }
     if ((asize > 512) && (asize <= 1024)){
-        index = 13;
+        index = 5;
     }
     if ((asize > 1024) && (asize <= 2048)){
-        index = 14;
+        index = 6;
     }
     if ((asize > 2048) && (asize <= 4096)){
-        index = 15;
+        index = 7;
     }
     if ((asize > 4096) && (asize <= 8192)){
-        index = 16;
+        index = 8;
     }
     if ((asize > 8192) && (asize <= 16384)){
-        index = 17;
+        index = 9;
     }
     if ((asize > 16384) && (asize <= 32768)){
-        index = 18;
+        index = 10;
     }
-    if ((asize > 32768) && (asize <= 65536)){
-        index = 19;
+    if ((asize > 32768)){
+        index = 11;
     }
-    if ((asize > 65536)){
-        index = 20;
-    }
+
     
     return index;
 }
@@ -288,7 +291,7 @@ static void *find_fit(size_t asize) {
     dbg_printf("=== FIND_FIT adjusted size: %ld\n", asize);
     
     for (index = index; index < CLASS_NUM; index ++) {
-        if (index < CLASS_NUM - 11) {
+        if (index < 1) {
             bclassp = get_class(index);
             bp = GET_CLASS_ROOT_BLK(bclassp);
             
@@ -619,7 +622,6 @@ void *realloc(void *oldptr, size_t size) {
     }
     
     
-    /* no free, just allocate new */
     newptr = malloc(size);
     
     /* Copy contents */
