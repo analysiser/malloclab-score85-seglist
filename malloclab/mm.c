@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "mm.h"
 #include "memlib.h"
@@ -42,7 +43,7 @@
 /*********************/
 /*
  ATTENTION, bp, heap_listp is (char *)
-                    */
+ */
 /*********************/
 /* single word (4) or double word (8) alignment */
 #define WSIZE     8
@@ -79,12 +80,13 @@
 
 #define SET_PRED(bp, val)   if ((void *)bp != NULL) \
                                 if ((size_t)(bp) - (size_t)(val)) \
-                                    ((*(size_t *)(bp)) = (size_t)val); 
+                                    ((*(size_t *)(bp)) = (size_t)val);
 
 
 #define SET_SUCC(bp, val)   if (((void *)bp != NULL)) \
                                 if ((size_t)(bp) - (size_t)(val)) \
                                     ((*(size_t *)((char *)(bp) + WSIZE)) = (size_t)(val));
+
 
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(p) (((size_t)(p) + (ALIGNMENT-1)) & ~0x7)
@@ -96,6 +98,8 @@
 /* Helper functions*/
 static char *heap_listp = NULL;
 static char *classp = NULL;
+
+#define GET_CLASS(idx)      ((char *)classp + idx * WSIZE)
 
 /*
  * Return whether the pointer is in the heap.
@@ -122,8 +126,6 @@ static inline int get_class_idx_by_size(size_t asize) {
         return -1;
     }
     
-    index = (int)((asize - 32) / 8);
-    index = (index > (CLASS_NUM - 1)) ? (CLASS_NUM - 1) : index;
     if (asize == 32) {
         index = 0;
     }
@@ -161,19 +163,7 @@ static inline int get_class_idx_by_size(size_t asize) {
         index = 11;
     }
 
-    
     return index;
-}
-
-static inline char *get_class(int index) {
-    
-    if ((index >= 0) && (index < CLASS_NUM)) {
-        return ((char *)classp + index * WSIZE);
-    }
-    
-    dbg_printf("=== In Get CLASS, illegal index!\n");
-    exit(1);
-    return NULL;
 }
 
 static inline char *get_class_ptr_by_bsize(size_t asize) {
@@ -215,7 +205,7 @@ static inline void insert_first(void *bp) {
 /* Equals to remove a node from linked list */
 static inline void remove_free_block(void *bp, int class_idx) {
     
-    char *bclassp = get_class(class_idx);
+    char *bclassp = GET_CLASS(class_idx);
     char *rootbp = GET_CLASS_ROOT_BLK(bclassp);
     
     if (!bp) {
@@ -269,6 +259,8 @@ static inline void split_free_block(void *bp, void *nextbp) {
 
 static inline void check_bp_pred_succ(void *bp) {
     
+    bp = bp;
+    /*
     dbg_printf("(size_t)(bp) = 0x%lx\n",(size_t)(bp));
     dbg_printf("(size_t)(bp pred) = 0x%lx\n",(size_t)GET_PRED_BLK(bp));
     dbg_printf("(size_t)(bp succ) = 0x%lx\n",(size_t)GET_SUCC_BLK(bp));
@@ -279,6 +271,7 @@ static inline void check_bp_pred_succ(void *bp) {
             exit(1);
         }
     }
+     */
 }
 
 
@@ -292,14 +285,14 @@ static void *find_fit(size_t asize) {
     
     for (index = index; index < CLASS_NUM; index ++) {
         if (index < 1) {
-            bclassp = get_class(index);
+            bclassp = GET_CLASS(index);
             bp = GET_CLASS_ROOT_BLK(bclassp);
             
             if (bp) return bp;
             
         }
         else {
-            bclassp = get_class(index);
+            bclassp = GET_CLASS(index);
             bp = GET_CLASS_ROOT_BLK(bclassp);
             
             if (bp) {
@@ -343,7 +336,7 @@ static void place(void *bp, size_t asize) {
         
         remove_free_block(nextbp, class_idx);
         insert_first(nextbp);
-
+        
         mm_checkheap(CHECK_HEAP);
         
     }
@@ -372,7 +365,7 @@ static void *coalesce(void *bp) {
     if (prev_alloc && next_alloc) {
         
         dbg_printf("Coalesce Case 1\n");
-                
+        
         PUT(GET_HEADER(bp), PACK(bsize, 0));
         PUT(GET_FOOTER(bp), PACK(bsize, 0));
         
@@ -389,7 +382,7 @@ static void *coalesce(void *bp) {
         class_idx = get_class_idx_by_size(GET_SIZE(GET_HEADER(nextbp)));
         remove_free_block(nextbp, class_idx);
         
-        bsize += GET_SIZE(GET_HEADER(nextbp));        
+        bsize += GET_SIZE(GET_HEADER(nextbp));
         PUT(GET_HEADER(bp), PACK(bsize, 0));
         PUT(GET_FOOTER(bp), PACK(bsize, 0));
         
@@ -405,7 +398,7 @@ static void *coalesce(void *bp) {
         
         class_idx = get_class_idx_by_size(GET_SIZE(GET_HEADER(prevbp)));
         
-        dbg_printf("class_idx = %d, class_address = 0x%lx\n", class_idx, (size_t)get_class(class_idx));
+        dbg_printf("class_idx = %d, class_address = 0x%lx\n", class_idx, (size_t)GET_CLASS(class_idx));
         
         remove_free_block(prevbp, class_idx);
         
@@ -509,8 +502,8 @@ int mm_init(void) {
     mm_checkheap(CHECK_HEAP);
     
     return 0;
-
-
+    
+    
 }
 
 /*
@@ -548,7 +541,7 @@ void *malloc(size_t size) {
         return NULL;
     }
     place(bp, asize);
-        
+    
     return bp;
 }
 
@@ -750,29 +743,27 @@ void mm_checkheap(int verbose) {
     if (verbose & 0x20) {
         
         for (i = 0; i < CLASS_NUM; i++) {
-            dbg_printf("CLASS No. %d, class_address = 0x%lx ,root block address = 0x%lx\n", i, (size_t)get_class(i), (size_t)GET_CLASS_ROOT_BLK(get_class(i)));
+            dbg_printf("CLASS No. %d, class_address = 0x%lx ,root block address = 0x%lx\n", i, (size_t)GET_CLASS(i), (size_t)GET_CLASS_ROOT_BLK(GET_CLASS(i)));
         }
         
         /*i = 1;
-        blkp = root;
-        
-        if (root != NULL) {
-            dbg_printf("root address = 0x%lx\n", (size_t)root);
-            
-            do {
-                dbg_printf("Check Free Block %d\n",i);
-                check_bp_pred_succ(blkp);
-                i++;
-                if (i > 100) {
-                    exit(1);
-                }
-            } while ((blkp = GET_SUCC_BLK(blkp)) != NULL);
-        }*/
+         blkp = root;
+         
+         if (root != NULL) {
+         dbg_printf("root address = 0x%lx\n", (size_t)root);
+         
+         do {
+         dbg_printf("Check Free Block %d\n",i);
+         check_bp_pred_succ(blkp);
+         i++;
+         if (i > 100) {
+         exit(1);
+         }
+         } while ((blkp = GET_SUCC_BLK(blkp)) != NULL);
+         }*/
     }
     
     /* Check each block’s address alignment */
     
     dbg_printf("******************\n");
 }
-
-
