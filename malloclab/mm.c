@@ -1,8 +1,11 @@
 /*
  * mm.c
  *
- * NOTE TO STUDENTS: Replace this header comment with your own header
- * comment that gives a high level description of your solution.
+ * Segregated Free List, with best fit policy
+ * Includes Header and Footer when block is free
+ * Footer is used to payload when allocating the block
+ * Only extend least size to meet malloc requirement when extending heap
+ * 
  *
  * Name: Xiao Li
  * Andrew ID: xiaol2
@@ -28,7 +31,10 @@
 # define dbg_printf(...)
 #endif
 
-
+/* 
+ * CHECK_HEAP is the mask for telling mm_checkheap what to test,
+ * generally, set it to 63 if all test cases are needed to be tested 
+ */
 #define CHECK_HEAP  0
 
 /* do not change the following! */
@@ -106,6 +112,7 @@ static char *classp = NULL;
  * Return whether the pointer is in the heap.
  * May be useful for debugging.
  */
+#if DEBUG
 static int in_heap(const void *p) {
     return p <= mem_heap_hi() && p >= mem_heap_lo();
 }
@@ -117,13 +124,16 @@ static int in_heap(const void *p) {
 static int aligned(const void *p) {
     return (size_t)ALIGN(p) == (size_t)p;
 }
+#endif
 
 static inline int get_class_idx_by_size(size_t asize) {
     
     int index = 0;
     if ((asize < 32) || (asize % ALIGNMENT)) {
+#if DEBUG
         dbg_printf("Illegal adjusted size. asize = %ld\n",asize);
         exit(1);
+#endif
         return -1;
     }
     
@@ -180,8 +190,6 @@ static inline void insert_first(void *bp) {
     /* root block adress for class size of asize */
     char *bclassp = get_class_ptr_by_bsize(asize);
     
-    dbg_printf("bclassp = 0x%lx\n", (size_t)bclassp);
-    
     char *rootbp = GET_CLASS_ROOT_BLK(bclassp);
     
     if (rootbp == NULL) {
@@ -210,7 +218,9 @@ static inline void remove_free_block(void *bp, int class_idx) {
     char *rootbp = GET_CLASS_ROOT_BLK(bclassp);
     
     if (!bp) {
+#if DEBUG
         dbg_printf("Trying to remove NULL\n");
+#endif
         exit(1);
     }
     
@@ -261,18 +271,20 @@ static inline void split_free_block(void *bp, void *nextbp) {
 static inline void check_bp_pred_succ(void *bp) {
     
     bp = bp;
-    /*
-     dbg_printf("(size_t)(bp) = 0x%lx\n",(size_t)(bp));
-     dbg_printf("(size_t)(bp pred) = 0x%lx\n",(size_t)GET_PRED_BLK(bp));
-     dbg_printf("(size_t)(bp succ) = 0x%lx\n",(size_t)GET_SUCC_BLK(bp));
-     
-     if (GET_SUCC_BLK(bp)) {
-     if ((size_t)bp - (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp))) {
-     dbg_printf("Pred not match! (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)) = 0x%lx\n",(size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)));
-     exit(1);
-     }
-     }
-     */
+    
+#if DEBUG
+    dbg_printf("(size_t)(bp) = 0x%lx\n",(size_t)(bp));
+    dbg_printf("(size_t)(bp pred) = 0x%lx\n",(size_t)GET_PRED_BLK(bp));
+    dbg_printf("(size_t)(bp succ) = 0x%lx\n",(size_t)GET_SUCC_BLK(bp));
+    
+    if (GET_SUCC_BLK(bp)) {
+        if ((size_t)bp - (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp))) {
+            dbg_printf("Pred not match! (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)) = 0x%lx\n",(size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)));
+            exit(1);
+        }
+    }
+#endif
+    
 }
 
 /* LIFO policy, first hit policy */
@@ -286,7 +298,9 @@ static void *find_fit(size_t asize) {
     
     int index = get_class_idx_by_size(asize);
     
+#if DEBUG
     dbg_printf("=== FIND_FIT adjusted size: %ld class index = %d\n", asize, index);
+#endif
     
     for (index = index; index < CLASS_NUM; index ++) {
         if (index < 1) {
@@ -317,7 +331,7 @@ static void *find_fit(size_t asize) {
                     
                 } while ((bp = (char *)GET_SUCC_BLK(bp)) != NULL);
                 
-                if (bestfit) 
+                if (bestfit)
                     return bestfit;
                 
             }
@@ -374,7 +388,9 @@ static void place(void *bp, size_t asize) {
         remove_free_block(nextbp, class_idx);
         insert_first(nextbp);
         
+#if DEBUG
         mm_checkheap(CHECK_HEAP);
+#endif
         
     }
     else {
@@ -525,10 +541,11 @@ static void *extend_heap(int words) {
             bsize = adjusted_bsize;
     }
     
-    dbg_printf("EXTEND_HEAD: words = %d bszie = %d\n", words, bsize);
-    
+#if DEBUG
+    dbg_printf("EXTEND_HEAP: words = %d bszie = %d\n", words, bsize);
     dbg_printf("!!!!!!!!!!!!!!!!!!!!!!!!Before Extend!!!!\n");
     mm_checkheap(CHECK_HEAP);
+#endif
     
     /* Record if last block is allocated or not */
     flag = GET_PREV_ALLOC(GET_HEADER(epilogue)) ? 0x2 : 0x0;
@@ -548,7 +565,9 @@ static void *extend_heap(int words) {
     SET_PRED(bp, NULL);
     SET_SUCC(bp, NULL);
     
+#if DEBUG
     mm_checkheap(CHECK_HEAP);
+#endif
     
     return coalesce(bp);
 }
@@ -586,8 +605,11 @@ int mm_init(void) {
         return -1;
     }
     
-    dbg_printf("HEAP INIT\n");
+    
+#if DEBUG
+    dbg_printf("HEAP INIT FINISH\n");
     mm_checkheap(CHECK_HEAP);
+#endif
     
     return 0;
     
@@ -638,32 +660,31 @@ void *malloc(size_t size) {
  */
 void free(void *ptr) {
     
-    dbg_printf("=== FREE : 0x%lx\n",(size_t)ptr);
+    if(!ptr) return;
     
 #if DEBUG
+    dbg_printf("=== FREE : 0x%lx\n",(size_t)ptr);
     if (NEXT_BLKP(ptr)) {
         if (!GET_PREV_ALLOC(GET_HEADER(NEXT_BLKP(ptr)))) {
             dbg_printf("0x%lx Fail to inform next block when malloc, or next block fail to update\n", (size_t)ptr);
             exit(3);
         }
     }
-#endif
     
-    if(!ptr) return;
-    
-    /* Debug */
     if(!in_heap(ptr)) {
         dbg_printf("ptr is not in heap!\n");
         
-        mm_checkheap(63);
+        mm_checkheap(CHECK_HEAP);
         exit(1);
     }
+    
     if (!aligned(ptr)) {
         dbg_printf("ptr is not aligned!\n");
         
-        mm_checkheap(63);
+        mm_checkheap(CHECK_HEAP);
         exit(1);
     }
+#endif
     
     size_t bsize = GET_SIZE(GET_HEADER(ptr));
     
@@ -685,15 +706,15 @@ void free(void *ptr) {
     
     coalesce(ptr);
     
+#if DEBUG
     mm_checkheap(CHECK_HEAP);
+#endif
 }
 
 /*
  * realloc - you may want to look at mm-naive.c
  */
 void *realloc(void *oldptr, size_t size) {
-    
-    dbg_printf("=== Realloc : 0x%ld\n size = %ld",(size_t)oldptr, size);
     
     size_t oldsize;
     void *newptr = NULL;
@@ -709,6 +730,7 @@ void *realloc(void *oldptr, size_t size) {
     }
     
     /* Debug */
+#if DEBUG
     if(!in_heap(oldptr)) {
         dbg_printf("ptr is not in heap!\n");
         return NULL;
@@ -723,7 +745,7 @@ void *realloc(void *oldptr, size_t size) {
         dbg_printf("ptr has been freed!\n");
         return NULL;
     }
-    
+#endif
     
     newptr = malloc(size);
     
@@ -779,6 +801,9 @@ void mm_checkheap(int verbose) {
     char *bp = heap_listp;
     int i = 1;
     int hd_size, hd_alloc, ft_size, ft_alloc;
+    int blockcnt = 0;
+    int totalblockcnt_by_class = 0;
+    int totalblockcnt_by_traverse = 0;
     /*char *blkp = root;*/
     
     if (heap_listp == NULL) {
@@ -851,31 +876,43 @@ void mm_checkheap(int verbose) {
         }
     }
     
-    /* Check pred, succ pointers */
+    /* Check pred, succ pointers, free block information */
     if (verbose & 0x20) {
         
+        /* Check Class */
         for (i = 0; i < CLASS_NUM; i++) {
-            dbg_printf("CLASS No. %d, class_address = 0x%lx ,root block address = 0x%lx\n", i, (size_t)GET_CLASS(i), (size_t)GET_CLASS_ROOT_BLK(GET_CLASS(i)));
+            dbg_printf("CLASS No. %d, class_address = 0x%lx ,root block address = 0x%lx ", i, (size_t)GET_CLASS(i), (size_t)GET_CLASS_ROOT_BLK(GET_CLASS(i)));
+            blockcnt = 0;
+            bp = GET_CLASS_ROOT_BLK(GET_CLASS(i));
+            while (bp) {
+                ++blockcnt;
+                bp = GET_SUCC_BLK(bp);
+                
+                if ((unsigned int)get_class_idx_by_size(GET_SIZE(GET_HEADER(bp)) != (unsigned int)i)) {
+                    dbg_printf("Header size doesn't match class size, address = 0x%lx\n",(size_t)bp);
+                    exit(2);
+                }
+            }
+            dbg_printf("block count for class %d is: %d\n",i , blockcnt);
+            totalblockcnt_by_class += blockcnt;
         }
         
-        /*i = 1;
-         blkp = root;
-         
-         if (root != NULL) {
-         dbg_printf("root address = 0x%lx\n", (size_t)root);
-         
-         do {
-         dbg_printf("Check Free Block %d\n",i);
-         check_bp_pred_succ(blkp);
-         i++;
-         if (i > 100) {
-         exit(1);
-         }
-         } while ((blkp = GET_SUCC_BLK(blkp)) != NULL);
-         }*/
+        bp = heap_listp;
+        totalblockcnt_by_traverse = 0;
+        while (GET_SIZE(GET_HEADER(NEXT_BLKP(bp))) > 0) {
+            bp = NEXT_BLKP(bp);
+            
+            hd_alloc = (int)GET_ALLOC(GET_HEADER(bp));
+            
+            if (!hd_alloc)
+                ++totalblockcnt_by_traverse;
+            
+        }
+        
+        if (totalblockcnt_by_class != totalblockcnt_by_traverse) {
+            dbg_printf("Feed Block amountes doesn't match!\n");
+        }
     }
     
-    /* Check each block’s address alignment */
-    
-    dbg_printf("******************\n");
+    dbg_printf("********** HEAP CHECK FINISH **********\n");
 }
