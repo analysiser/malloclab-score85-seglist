@@ -21,7 +21,7 @@
 
 /* If you want debugging output, use the following macro.  When you hand
  * in, remove the #define DEBUG line. */
-/*#define DEBUG   1*/
+/*#define DEBUG*/
 #ifdef DEBUG
 # define dbg_printf(...) printf(__VA_ARGS__)
 #else
@@ -50,7 +50,7 @@
 #define DSIZE     16
 #define ALIGNMENT 8
 
-#define CHUNKSIZE   (1 << 8) /* 512, got best score */
+#define CHUNKSIZE   (1 << 9) /* 512, got best score */
 
 #define MAX(x, y) (((x) > (y))? (x) : (y))
 
@@ -64,9 +64,8 @@
 #define SET_CLASS_ROOT_BLK(p, val)    (*(size_t *)(p) = (size_t)(val))
 
 /* Read header and footer information, !!!ATTENTION!!! GET_SIZE/ALLOC ONLY work for header and footer */
-#define GET_SIZE(p)             (GET(p) & ~0x7)
-#define GET_ALLOC(p)            (GET(p) & 0x1)
-#define GET_PREV_ALLOC(p)       (GET(p) & 0x2)  /**! the second least significant bit is for recording if previous block is allocated */
+#define GET_SIZE(p)     (GET(p) & ~0x7)
+#define GET_ALLOC(p)    (GET(p) & 0x1)
 
 /* bp points to one wsize after header, !!!ATTENTION!!! footer called header, therefore header better be set beforehand */
 #define GET_HEADER(bp)  ((char *)(bp) - WSIZE)
@@ -80,13 +79,13 @@
 #define GET_SUCC_BLK(bp)    (char *)(*(size_t *)((char *)(bp) + WSIZE))
 
 #define SET_PRED(bp, val)   if ((void *)bp != NULL) \
-if ((size_t)(bp) - (size_t)(val)) \
-((*(size_t *)(bp)) = (size_t)val);
+                                if ((size_t)(bp) - (size_t)(val)) \
+                                    ((*(size_t *)(bp)) = (size_t)val);
 
 
 #define SET_SUCC(bp, val)   if (((void *)bp != NULL)) \
-if ((size_t)(bp) - (size_t)(val)) \
-((*(size_t *)((char *)(bp) + WSIZE)) = (size_t)(val));
+                                if ((size_t)(bp) - (size_t)(val)) \
+                                    ((*(size_t *)((char *)(bp) + WSIZE)) = (size_t)(val));
 
 
 /* rounds up to the nearest multiple of ALIGNMENT */
@@ -122,7 +121,7 @@ static inline int get_class_idx_by_size(size_t asize) {
     
     int index = 0;
     if ((asize < 32) || (asize % ALIGNMENT)) {
-        dbg_printf("Illegal adjusted size. asize = %ld\n",asize);
+        dbg_printf("Illegal adjusted size.\n");
         exit(1);
         return -1;
     }
@@ -163,7 +162,7 @@ static inline int get_class_idx_by_size(size_t asize) {
     if ((asize > 32768)){
         index = 11;
     }
-    
+
     return index;
 }
 
@@ -262,18 +261,19 @@ static inline void check_bp_pred_succ(void *bp) {
     
     bp = bp;
     /*
-     dbg_printf("(size_t)(bp) = 0x%lx\n",(size_t)(bp));
-     dbg_printf("(size_t)(bp pred) = 0x%lx\n",(size_t)GET_PRED_BLK(bp));
-     dbg_printf("(size_t)(bp succ) = 0x%lx\n",(size_t)GET_SUCC_BLK(bp));
-     
-     if (GET_SUCC_BLK(bp)) {
-     if ((size_t)bp - (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp))) {
-     dbg_printf("Pred not match! (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)) = 0x%lx\n",(size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)));
-     exit(1);
-     }
-     }
+    dbg_printf("(size_t)(bp) = 0x%lx\n",(size_t)(bp));
+    dbg_printf("(size_t)(bp pred) = 0x%lx\n",(size_t)GET_PRED_BLK(bp));
+    dbg_printf("(size_t)(bp succ) = 0x%lx\n",(size_t)GET_SUCC_BLK(bp));
+    
+    if (GET_SUCC_BLK(bp)) {
+        if ((size_t)bp - (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp))) {
+            dbg_printf("Pred not match! (size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)) = 0x%lx\n",(size_t)GET_PRED_BLK(GET_SUCC_BLK(bp)));
+            exit(1);
+        }
+    }
      */
 }
+
 
 /* LIFO policy, first hit policy */
 static void *find_fit(size_t asize) {
@@ -281,7 +281,7 @@ static void *find_fit(size_t asize) {
     char *bp = NULL;
     char *bclassp = NULL;
     int index = get_class_idx_by_size(asize);
-    dbg_printf("=== FIND_FIT adjusted size: %ld class index = %d\n", asize, index);
+    dbg_printf("=== FIND_FIT adjusted size: %ld\n", asize);
     
     for (index = index; index < CLASS_NUM; index ++) {
         if (index < 1) {
@@ -311,44 +311,25 @@ static void *find_fit(size_t asize) {
 /* Place an ADJUSTED sized block in heap */
 static void place(void *bp, size_t asize) {
     
-#if DEBUG
-    if (NEXT_BLKP(bp)) {
-        if (GET_PREV_ALLOC(GET_HEADER(NEXT_BLKP(bp)))) {
-            dbg_printf("0x%lx: Fail to inform next block when free\n", (size_t)bp);
-            exit(2);
-        }
-    }
-#endif
-    
     dbg_printf("=== Place, bp = 0x%lx, adjusted size = %ld \n", (size_t)bp, asize);
     
     /* block free size */
     size_t csize = GET_SIZE(GET_HEADER(bp));
     char *nextbp = NULL;
     int class_idx = 0;
-    size_t flag = 0;
     
     /* Split, say, minimum block size set to 1 WSIZE = 8 byte */
     if ((csize - asize) >= (4 * WSIZE)) {
         
         class_idx = get_class_idx_by_size(GET_SIZE(GET_HEADER(bp)));
         
-        /* Include previous block's information */
-        flag = GET_PREV_ALLOC(GET_HEADER(bp)) ? 0x3 : 0x1;
-        
-        PUT(GET_HEADER(bp), PACK(asize, flag));
-        PUT(GET_FOOTER(bp), PACK(asize, flag));
+        PUT(GET_HEADER(bp), PACK(asize, 1));
+        PUT(GET_FOOTER(bp), PACK(asize, 1));
         
         nextbp = NEXT_BLKP(bp);
         
         PUT(GET_HEADER(nextbp), PACK((csize - asize), 0));
         PUT(GET_FOOTER(nextbp), PACK((csize - asize), 0));
-        
-        /* Inform the next block that this block is allocated */
-        flag = GET(GET_HEADER(nextbp));
-        flag |= 0x2;
-        PUT(GET_HEADER(nextbp), flag);
-        PUT(GET_FOOTER(nextbp), flag);
         
         split_free_block(bp, nextbp);
         remove_free_block(bp, class_idx);
@@ -360,28 +341,8 @@ static void place(void *bp, size_t asize) {
         
     }
     else {
-        /* Include previous block's information */
-        flag = GET_PREV_ALLOC(GET_HEADER(bp)) ? 0x3 : 0x1;
-        
-        PUT(GET_HEADER(bp), PACK(csize, flag));
-        PUT(GET_FOOTER(bp), PACK(csize, flag));
-        
-        /* Inform the next block that this block is allocated */
-        if ((size_t)bp == 0x800004980) {
-            dbg_printf("bp size = %ld\n",GET_SIZE(GET_HEADER(bp)));
-            dbg_printf("NEXT_BLKP(bp); 0x%lx\n",(size_t)NEXT_BLKP(bp));
-        }
-        nextbp = NEXT_BLKP(bp);
-        if (nextbp) {
-            flag = GET(GET_HEADER(nextbp));
-            flag |= 0x2;
-            PUT(GET_HEADER(nextbp), flag);
-            /* Only put footer when next block is free */
-            if (!GET_ALLOC(GET_HEADER(nextbp))) {
-                PUT(GET_FOOTER(nextbp), flag);
-            }
-            
-        }
+        PUT(GET_HEADER(bp), PACK(csize, 1));
+        PUT(GET_FOOTER(bp), PACK(csize, 1));
         
         remove_free_block(bp, get_class_idx_by_size(csize));
     }
@@ -394,11 +355,9 @@ static void *coalesce(void *bp) {
     void *prevbp = PREV_BLKP(bp);
     void *nextbp = NEXT_BLKP(bp);
     
-    /*ONLY use the former alloc flag  */
-    size_t prev_alloc = GET_PREV_ALLOC(GET_HEADER(bp)); /*GET_ALLOC(GET_FOOTER(prevbp));*/
+    size_t prev_alloc = GET_ALLOC(GET_FOOTER(prevbp));
     size_t next_alloc = GET_ALLOC(GET_HEADER(nextbp));
     size_t bsize = GET_SIZE(GET_HEADER(bp));
-    size_t flag = 0;
     
     int class_idx = 0;
     
@@ -406,6 +365,9 @@ static void *coalesce(void *bp) {
     if (prev_alloc && next_alloc) {
         
         dbg_printf("Coalesce Case 1\n");
+        
+        PUT(GET_HEADER(bp), PACK(bsize, 0));
+        PUT(GET_FOOTER(bp), PACK(bsize, 0));
         
         insert_first(bp);
         
@@ -420,12 +382,9 @@ static void *coalesce(void *bp) {
         class_idx = get_class_idx_by_size(GET_SIZE(GET_HEADER(nextbp)));
         remove_free_block(nextbp, class_idx);
         
-        /* Telling coalesced free block about if bp's previous allocated */
-        flag = GET_PREV_ALLOC(GET_HEADER(bp)) ? 0x2 : 0x0;
-        
         bsize += GET_SIZE(GET_HEADER(nextbp));
-        PUT(GET_HEADER(bp), PACK(bsize, flag));
-        PUT(GET_FOOTER(bp), PACK(bsize, flag));
+        PUT(GET_HEADER(bp), PACK(bsize, 0));
+        PUT(GET_FOOTER(bp), PACK(bsize, 0));
         
         insert_first(bp);
         
@@ -443,17 +402,9 @@ static void *coalesce(void *bp) {
         
         remove_free_block(prevbp, class_idx);
         
-        /* Telling coalesced free block about if bp's previous's previous allocated */
-        flag = GET_PREV_ALLOC(GET_HEADER(prevbp)) ? 0x2 : 0x0;
-        
-        if (flag == 0) {
-            printf("Implies fail coalese: 0x%lx with former\n", (size_t)prevbp);
-            exit(2);
-        }
-        
         bsize += GET_SIZE(GET_HEADER(prevbp));
-        PUT(GET_HEADER(prevbp), PACK(bsize, flag));
-        PUT(GET_FOOTER(prevbp), PACK(bsize, flag));
+        PUT(GET_HEADER(prevbp), PACK(bsize, 0));
+        PUT(GET_FOOTER(prevbp), PACK(bsize, 0));
         
         insert_first(prevbp);
         
@@ -469,18 +420,10 @@ static void *coalesce(void *bp) {
         class_idx = get_class_idx_by_size(GET_SIZE(GET_HEADER(prevbp)));
         remove_free_block(prevbp, class_idx);
         
-        /* Telling coalesced free block about if bp's previous's previous allocated */
-        flag = GET_PREV_ALLOC(GET_HEADER(prevbp)) ? 0x2 : 0x0;
-        
-        if (flag == 0) {
-            printf("Implies fail coalese: 0x%lx with former\n", (size_t)prevbp);
-            exit(2);
-        }
-        
         bsize += GET_SIZE(GET_HEADER(nextbp));
         bsize += GET_SIZE(GET_FOOTER(prevbp));
-        PUT(GET_HEADER(prevbp), PACK(bsize, flag));
-        PUT(GET_FOOTER(nextbp), PACK(bsize, flag));
+        PUT(GET_HEADER(prevbp), PACK(bsize, 0));
+        PUT(GET_FOOTER(nextbp), PACK(bsize, 0));
         
         insert_first(prevbp);
         
@@ -495,11 +438,8 @@ static void *coalesce(void *bp) {
 /*  */
 static void *extend_heap(int words) {
     
-    /* last block of heap, size = 0, alloc = 1 */
-    char *epilogue = (mem_heap_hi() + 1);
     char *bp; /* block pointer */
     int bsize; /* block size to extend */
-    size_t flag = 0;
     
     /* Allocate even number of words to maintain alignment */
     bsize = (words % 2) ? ((words + 1) * WSIZE) : (words * WSIZE);
@@ -509,19 +449,12 @@ static void *extend_heap(int words) {
     dbg_printf("!!!!!!!!!!!!!!!!!!!!!!!!Before Extend!!!!\n");
     mm_checkheap(CHECK_HEAP);
     
-    /* Record if last block is allocated or not */
-    flag = GET_PREV_ALLOC(GET_HEADER(epilogue)) ? 0x2 : 0x0;
-    
     if ((long)(bp = mem_sbrk(bsize)) == -1)
         return NULL;
     
-    
-    
     /* Init free block header/footer and the epilogue header */
-    PUT(GET_HEADER(bp), PACK(bsize, flag));
-    PUT(GET_FOOTER(bp), PACK(bsize, flag));
-    
-    /* Set epilogue to be size = 0, alloc = 1 */
+    PUT(GET_HEADER(bp), PACK(bsize, 0));
+    PUT(GET_FOOTER(bp), PACK(bsize, 0));
     PUT(GET_HEADER(NEXT_BLKP(bp)), PACK(0, 1));
     
     SET_PRED(bp, NULL);
@@ -556,9 +489,9 @@ int mm_init(void) {
         return -1;
     
     PUT(heap_listp, 0);
-    PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 3)); /* Prologue header */
-    PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 3)); /* Prologue footer */
-    PUT(heap_listp + (3 * WSIZE), PACK(0, 3));     /* Epilogue header */
+    PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1)); /* Prologue header */
+    PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1)); /* Prologue footer */
+    PUT(heap_listp + (3 * WSIZE), PACK(0, 1));     /* Epilogue header */
     heap_listp += 2 * WSIZE;
     
     if (extend_heap(CHUNKSIZE/WSIZE) == NULL) {
@@ -592,7 +525,7 @@ void *malloc(size_t size) {
     if (size <= 2 * ALIGNMENT)
         asize = 2 * ALIGNMENT + DSIZE;
     else
-        asize = WSIZE + ALIGN(size);    /* for > 16 bytes size, could remove footer when not need */
+        asize = DSIZE + ALIGN(size);
     
     
     /* search free list for a fit*/
@@ -619,15 +552,6 @@ void free(void *ptr) {
     
     dbg_printf("=== FREE : 0x%lx\n",(size_t)ptr);
     
-#if DEBUG
-    if (NEXT_BLKP(ptr)) {
-        if (!GET_PREV_ALLOC(GET_HEADER(NEXT_BLKP(ptr)))) {
-            dbg_printf("0x%lx Fail to inform next block when malloc, or next block fail to update\n", (size_t)ptr);
-            exit(3);
-        }
-    }
-#endif
-    
     if(!ptr) return;
     
     /* Debug */
@@ -646,21 +570,8 @@ void free(void *ptr) {
     
     size_t bsize = GET_SIZE(GET_HEADER(ptr));
     
-    size_t flag = GET_PREV_ALLOC(GET_HEADER(ptr)) ? 0x2 : 0x0;
-    PUT(GET_HEADER(ptr), PACK(bsize, flag));
-    PUT(GET_FOOTER(ptr), PACK(bsize, flag));
-    
-    /* Inform the next block that this block is freed */
-    char *nextbp = NEXT_BLKP(ptr);
-    if (nextbp) {
-        flag = GET(GET_HEADER(nextbp));
-        flag &= ~0x2;
-        PUT(GET_HEADER(nextbp), flag);
-        /* Only put footer when next block is free */
-        if (!GET_ALLOC(GET_HEADER(nextbp))) {
-            PUT(GET_FOOTER(nextbp), flag);
-        }
-    }
+    PUT(GET_HEADER(ptr), PACK(bsize, 0));
+    PUT(GET_FOOTER(ptr), PACK(bsize, 0));
     
     coalesce(ptr);
     
@@ -797,17 +708,14 @@ void mm_checkheap(int verbose) {
             ft_alloc = (int)GET_ALLOC(GET_FOOTER(bp));
             
             if (verbose & 0x8) {
-                if (!hd_alloc) {
-                    if (hd_size - ft_size) {
-                        dbg_printf("SIZE NOT MATCH!!! Block (%d), addr = 0x%lx, header_size = %d footer_size = %d \n", i, (unsigned long)bp , hd_size, ft_size);
-                        exit(1);
-                    }
-                    if (hd_alloc - ft_alloc) {
-                        dbg_printf("ALLOC NOT MATCH!!! Block (%d), addr = 0x%lx, header_alloc = %d footer_alloc = %d \n", i, (unsigned long)bp, hd_alloc, ft_alloc);
-                        exit(1);
-                    }
+                if (hd_size - ft_size) {
+                    dbg_printf("SIZE NOT MATCH!!! Block (%d), addr = 0x%lx, header_size = %d footer_size = %d \n", i, (unsigned long)bp , hd_size, ft_size);
+                    exit(1);
                 }
-                
+                if (hd_alloc - ft_alloc) {
+                    dbg_printf("ALLOC NOT MATCH!!! Block (%d), addr = 0x%lx, header_alloc = %d footer_alloc = %d \n", i, (unsigned long)bp, hd_alloc, ft_alloc);
+                    exit(1);
+                }
             }
             
             if (verbose & 0x4) {
@@ -822,6 +730,7 @@ void mm_checkheap(int verbose) {
     /* Check coalescing */
     if (verbose & 0x10) {
         bp = heap_listp;
+        i = 1;
         while (GET_SIZE(GET_HEADER(NEXT_BLKP(bp))) > 0) {
             bp = NEXT_BLKP(bp);
             if ((GET_ALLOC(GET_HEADER(bp)) == 0) && (GET_ALLOC(GET_HEADER(NEXT_BLKP(bp))) == 0)) {
