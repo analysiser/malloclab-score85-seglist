@@ -280,7 +280,12 @@ static void *find_fit(size_t asize) {
     
     char *bp = NULL;
     char *bclassp = NULL;
+    char *bestfit = NULL;
+    unsigned long bestsize = (1 << 31);
+    unsigned long tmpsize = 0;
+    
     int index = get_class_idx_by_size(asize);
+    
     dbg_printf("=== FIND_FIT adjusted size: %ld class index = %d\n", asize, index);
     
     for (index = index; index < CLASS_NUM; index ++) {
@@ -298,10 +303,23 @@ static void *find_fit(size_t asize) {
             if (bp) {
                 do {
                     check_bp_pred_succ(bp);
-                    if ((GET_SIZE(GET_HEADER(bp)) >= asize))
+                    tmpsize = GET_SIZE(GET_HEADER(bp));
+                    if (tmpsize == asize) {
                         return bp;
+                    }
+                    else if (tmpsize > asize) {
+                        if (tmpsize < bestsize) {
+                            bestsize = tmpsize;
+                            bestfit = bp;
+                        }
+                        /*return bp;*/
+                    }
                     
                 } while ((bp = (char *)GET_SUCC_BLK(bp)) != NULL);
+                
+                if (bestfit) 
+                    return bestfit;
+                
             }
         }
     }
@@ -367,10 +385,6 @@ static void place(void *bp, size_t asize) {
         PUT(GET_FOOTER(bp), PACK(csize, flag));
         
         /* Inform the next block that this block is allocated */
-        if ((size_t)bp == 0x800004980) {
-            dbg_printf("bp size = %ld\n",GET_SIZE(GET_HEADER(bp)));
-            dbg_printf("NEXT_BLKP(bp); 0x%lx\n",(size_t)NEXT_BLKP(bp));
-        }
         nextbp = NEXT_BLKP(bp);
         if (nextbp) {
             flag = GET(GET_HEADER(nextbp));
@@ -499,10 +513,17 @@ static void *extend_heap(int words) {
     char *epilogue = (mem_heap_hi() + 1);
     char *bp; /* block pointer */
     int bsize; /* block size to extend */
+    int adjusted_bsize = 0; /* Incase heap doesn't need to extend that much */
     size_t flag = 0;
     
     /* Allocate even number of words to maintain alignment */
     bsize = (words % 2) ? ((words + 1) * WSIZE) : (words * WSIZE);
+    
+    if (!GET_PREV_ALLOC(GET_HEADER(epilogue))) {
+        adjusted_bsize = bsize - (int)GET_SIZE(GET_HEADER(PREV_BLKP(epilogue)));
+        if(adjusted_bsize > 2 * DSIZE)
+            bsize = adjusted_bsize;
+    }
     
     dbg_printf("EXTEND_HEAD: words = %d bszie = %d\n", words, bsize);
     
